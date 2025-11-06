@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # l7 zero trust Management Server
+  management:
+    image: netbirdio/management:latest
+    container_name: l7-management
+    restart: unless-stopped
+    volumes:
+      - l7_management_data:/var/lib/netbird
+      - ./management-config.json:/etc/netbird/management.json:ro
+    ports:
+      - "33073:33073"  # gRPC API
+      - "33074:33074"  # HTTP API
+    environment:
+      - NETBIRD_MGMT_API_PORT=33074
+      - NETBIRD_MGMT_GRPC_PORT=33073
+      - NETBIRD_DOMAIN=${L7_DOMAIN:-zerotrust.layer7.de}
+      - NETBIRD_AUTH_OIDC_CONFIGURATION_ENDPOINT=${L7_OIDC_ENDPOINT}
+      - NETBIRD_AUTH_AUDIENCE=${L7_AUTH_AUDIENCE}
+      - NETBIRD_AUTH_CLIENT_ID=${L7_AUTH_CLIENT_ID}
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=management"
+      - "com.layer7.product=zerotrust"
+
+  # Signal Server (WebRTC Signaling)
+  signal:
+    image: netbirdio/signal:latest
+    container_name: l7-signal
+    restart: unless-stopped
+    ports:
+      - "10000:10000"  # gRPC
+    environment:
+      - NETBIRD_SIGNAL_PORT=10000
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=signal"
+      - "com.layer7.product=zerotrust"
+
+  # TURN/STUN Server (Coturn)
+  coturn:
+    image: coturn/coturn:latest
+    container_name: l7-coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478/udp"      # STUN/TURN
+      - "3478:3478/tcp"      # STUN/TURN
+      - "49152-65535:49152-65535/udp"  # TURN relay
+    volumes:
+      - ./coturn.conf:/etc/coturn/turnserver.conf:ro
+    command: -c /etc/coturn/turnserver.conf
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=coturn"
+      - "com.layer7.product=zerotrust"
+
+  # l7 zero trust Dashboard (Web UI)
+  # Hinweis: Verwenden Sie Ihr eigenes gebrandetes Dashboard-Image
+  dashboard:
+    image: netbirdio/dashboard:latest
+    container_name: l7-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NETBIRD_MGMT_API_ENDPOINT=http://management:33074
+      - NETBIRD_MGMT_GRPC_API_ENDPOINT=http://management:33073
+      - AUTH_AUDIENCE=${L7_AUTH_AUDIENCE}
+      - AUTH_CLIENT_ID=${L7_AUTH_CLIENT_ID}
+      - AUTH_AUTHORITY=${L7_OIDC_ENDPOINT}
+      - USE_AUTH0=false
+      - NGINX_SSL_PORT=443
+      - LETSENCRYPT_DOMAIN=${L7_DOMAIN:-zerotrust.layer7.de}
+    volumes:
+      - l7_dashboard_letsencrypt:/etc/letsencrypt
+    networks:
+      - l7-network
+    depends_on:
+      - management
+    labels:
+      - "com.layer7.service=dashboard"
+      - "com.layer7.product=zerotrust"
+      - "traefik.enable=true"
+      - "traefik.http.routers.l7-dashboard.rule=Host(`${L7_DOMAIN:-zerotrust.layer7.de}`)"
+      - "traefik.http.services.l7-dashboard.loadbalancer.server.port=80"
+
+  # Optional: Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: l7-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${L7_ADMIN_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "8080:80"    # HTTP
+      - "8443:443"   # HTTPS
+      - "8081:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - l7_traefik_letsencrypt:/letsencrypt
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=traefik"
+      - "com.layer7.product=zerotrust"
+
+  # Optional: PostgreSQL für Management Server
+  postgres:
+    image: postgres:15-alpine
+    container_name: l7-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=l7_zerotrust
+      - POSTGRES_USER=l7admin
+      - POSTGRES_PASSWORD=${L7_DB_PASSWORD:-changeme}
+    volumes:
+      - l7_postgres_data:/var/lib/postgresql/data
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=postgres"
+      - "com.layer7.product=zerotrust"
+
+  # Optional: Redis für Caching
+  redis:
+    image: redis:7-alpine
+    container_name: l7-redis
+    restart: unless-stopped
+    volumes:
+      - l7_redis_data:/data
+    networks:
+      - l7-network
+    labels:
+      - "com.layer7.service=redis"
+      - "com.layer7.product=zerotrust"
+
+volumes:
+  l7_management_data:
+    name: l7_management_data
+  l7_dashboard_letsencrypt:
+    name: l7_dashboard_letsencrypt
+  l7_traefik_letsencrypt:
+    name: l7_traefik_letsencrypt
+  l7_postgres_data:
+    name: l7_postgres_data
+  l7_redis_data:
+    name: l7_redis_data
+
+networks:
+  l7-network:
+    name: l7-network
+    driver: bridge

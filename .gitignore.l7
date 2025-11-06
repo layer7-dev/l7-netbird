@@ -1,0 +1,82 @@
+# l7 zero trust - Deployment Files
+# Diese Datei sollte zu .gitignore hinzugefügt werden
+
+# Environment-Dateien mit Secrets
+.env
+.env.local
+.env.production
+
+# SSL/TLS Zertifikate
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+ssl/
+certs/
+
+# Konfigurationsdateien mit Secrets
+management-config.json
+coturn.conf
+
+# Docker Volumes
+docker/volumes/
+
+# Backup-Dateien
+backup/
+*.backup
+*.sql.gz
+*.tar.gz
+*.dump
+
+# Logs
+*.log
+logs/
+var/log/
+
+# Temporäre Dateien
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build-Artefakte
+dist/
+build/
+*.exe
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# Generated Icons (sollten regeneriert werden)
+client/ui/assets/netbird-systemtray-*.png
+client/ui/assets/l7-*.png
+
+# Test-Daten
+testdata/
+test-results/
+
+# Node modules (wenn Dashboard gebaut wird)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Go
+vendor/
+*.test
+*.out
+coverage.txt
+profile.out
+
+# Secrets Management
+secrets/
+vault/
+.secrets

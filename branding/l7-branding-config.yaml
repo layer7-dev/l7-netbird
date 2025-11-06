@@ -1,0 +1,40 @@
+# l7 zero trust Branding Configuration
+# This file defines the branding parameters for the l7 zero trust custom build
+
+branding:
+  product_name: "l7 zero trust"
+  company_name: "layer7 managed it"
+  app_id: "l7zerotrust"
+  
+colors:
+  primary: "#a0cf4f"        # Layer7 Green
+  primary_hover: "#8fb644"
+  primary_active: "#7ea039"
+  
+assets:
+  source:
+    black_icon: "l7-assets/layer7_managed_it_icon.png"
+    white_icon: "l7-assets/layer7_managed_it_icon_white.png"
+    black_logo: "l7-assets/layer7_managed_it_black.png"
+    white_logo: "l7-assets/layer7_managed_it_white_retina.png"
+  
+  desktop:
+    theme_aware: true
+    light_mode_color: "black"
+    dark_mode_color: "white"
+    
+  web:
+    logo_color: "white"
+    
+update_server:
+  enabled: true
+  url: "https://updates.layer7.de"
+  channel: "l7/zerotrust-ui"
+  
+build:
+  project_name: "l7-zerotrust"
+  binary_name: "l7-zerotrust-ui"
+  
+upstream:
+  repository: "https://github.com/netbirdio/netbird.git"
+  sync_schedule: "weekly"  # Monday 2:00 AM

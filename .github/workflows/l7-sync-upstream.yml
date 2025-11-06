@@ -1,0 +1,110 @@
+name: Sync with Upstream Netbird
+
+on:
+  schedule:
+    # Jeden Montag um 1:00 Uhr UTC
+    - cron: '0 1 * * 1'
+  workflow_dispatch:  # Manueller Trigger
+
+jobs:
+  sync:
+    name: Sync and Apply l7 Branding
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Configure Git
+        run: |
+          git config user.name "l7 Build Bot"
+          git config user.email "build@layer7.de"
+          
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/netbirdio/netbird.git || true
+          git fetch upstream
+          
+      - name: Check for upstream changes
+        id: check_changes
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/main)
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          if [ "$BEHIND" -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📦 $BEHIND new commits available from upstream"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ Already up to date with upstream"
+          fi
+          
+      - name: Merge upstream changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git merge upstream/main --no-edit || {
+            echo "❌ Merge conflicts detected"
+            git merge --abort
+            exit 1
+          }
+          
+      - name: Install dependencies
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick icoutils jq
+          
+      - name: Apply l7 branding
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          chmod +x branding/scripts/apply-l7-branding.sh
+          chmod +x branding/scripts/generate-l7-icons.sh
+          ./branding/scripts/apply-l7-branding.sh
+          
+      - name: Commit branding changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git add -A
+          git diff --staged --quiet || {
+            git commit -m "🎨 Apply l7 branding after upstream sync
+            
+            - Synced with netbirdio/netbird@$(git rev-parse upstream/main | cut -c1-7)
+            - Applied l7 zero trust branding
+            - Updated icons and assets
+            - Modified app identifiers"
+          }
+          
+      - name: Push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: git push origin main
+        
+      - name: Create issue on merge conflict
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔄 Upstream Sync Failed - Manual Resolution Required',
+              body: `The automatic upstream sync encountered conflicts that need manual resolution.
+              
+              **Details:**
+              - Workflow: ${context.workflow}
+              - Run: ${context.runNumber}
+              - Commit: ${context.sha}
+              
+              **Next Steps:**
+              1. Clone the repository
+              2. Add upstream: \`git remote add upstream https://github.com/netbirdio/netbird.git\`
+              3. Fetch: \`git fetch upstream\`
+              4. Merge: \`git merge upstream/main\`
+              5. Resolve conflicts manually
+              6. Apply branding: \`./branding/scripts/apply-l7-branding.sh\`
+              7. Commit and push
+              
+              @${context.actor} Please review and resolve.`,
+              labels: ['upstream-sync', 'needs-resolution']
+            })

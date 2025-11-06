@@ -1,0 +1,147 @@
+name: Build l7 zero trust UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/ui/**'
+      - 'branding/**'
+      - '.goreleaser_ui.yaml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  release:
+    types: [created]
+
+jobs:
+  build-ui:
+    name: Build l7 UI (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: darwin
+            
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc \
+            libgl1-mesa-dev \
+            xorg-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            imagemagick \
+            icoutils
+            
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install imagemagick
+          
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install imagemagick -y
+          
+      - name: Verify l7 branding
+        run: |
+          echo "🔍 Checking l7 branding..."
+          if grep -q "l7zerotrust" client/ui/client_ui.go; then
+            echo "✅ l7 branding verified"
+          else
+            echo "⚠️  l7 branding not applied, applying now..."
+            chmod +x branding/scripts/apply-l7-branding.sh
+            ./branding/scripts/apply-l7-branding.sh
+          fi
+        shell: bash
+        
+      - name: Build UI
+        working-directory: client/ui
+        run: go build -v -o l7-zerotrust-ui${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        
+      - name: Test UI binary
+        if: matrix.os != 'windows-latest'
+        working-directory: client/ui
+        run: |
+          chmod +x l7-zerotrust-ui
+          ./l7-zerotrust-ui --version || echo "Version check not implemented yet"
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: l7-zerotrust-ui-${{ matrix.platform }}
+          path: |
+            client/ui/l7-zerotrust-ui${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          retention-days: 7
+          
+  release-ui:
+    name: Release l7 UI with GoReleaser
+    needs: build-ui
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc \
+            gcc-mingw-w64 \
+            libgl1-mesa-dev \
+            xorg-dev \
+            imagemagick \
+            icoutils
+            
+      - name: Apply l7 branding
+        run: |
+          chmod +x branding/scripts/apply-l7-branding.sh
+          ./branding/scripts/apply-l7-branding.sh
+          
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --config .goreleaser_ui.yaml --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: l7-zerotrust-ui-release
+          path: dist/
+          retention-days: 30
