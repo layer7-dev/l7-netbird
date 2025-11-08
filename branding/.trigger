@@ -1,0 +1,1 @@
+Trigger workflow with updated paths
