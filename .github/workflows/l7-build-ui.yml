@@ -130,12 +130,12 @@ jobs:
           chmod +x branding/scripts/apply-l7-branding.sh
           ./branding/scripts/apply-l7-branding.sh
           
-      - name: Run GoReleaser (snapshot mode allows dirty state)
+      - name: Run GoReleaser (snapshot + skip-validate for dirty state)
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --config .goreleaser_ui.yaml --clean --snapshot
+          args: release --config .goreleaser_ui.yaml --clean --snapshot --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
