@@ -1,6 +1,16 @@
 version: 2
 
 project_name: netbird-ui
+
+# Allow dirty builds for CI/CD where branding is applied
+git:
+  ignore_tags: false
+  
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+# Allow modified files (branding script creates assets during build)
+dist: dist
 builds:
   - id: netbird-ui
     dir: client/ui
