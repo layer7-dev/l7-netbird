@@ -9,16 +9,19 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Ermittle Projekt-Root (von branding/scripts/ aus zwei Ebenen hoch)
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Detect Windows and use magick prefix
+CONVERT_CMD="convert"
+if command -v magick &> /dev/null; then
+    CONVERT_CMD="magick convert"
+fi
 
-# Quell-Assets (absolute Pfade)
-BLACK_ICON="$PROJECT_ROOT/l7-assets/layer7_managed_it_icon.png"
-WHITE_ICON="$PROJECT_ROOT/l7-assets/layer7_managed_it_icon_white.png"
-BLACK_LOGO="$PROJECT_ROOT/l7-assets/layer7_managed_it_black.png"
-WHITE_LOGO="$PROJECT_ROOT/l7-assets/layer7_managed_it_white_retina.png"
-OUTPUT_DIR="$PROJECT_ROOT/client/ui/assets"
+# Use relative paths from project root
+# (script is called from project root via bash branding/scripts/generate-l7-icons.sh)
+BLACK_ICON="l7-assets/layer7_managed_it_icon.png"
+WHITE_ICON="l7-assets/layer7_managed_it_icon_white.png"
+BLACK_LOGO="l7-assets/layer7_managed_it_black.png"
+WHITE_LOGO="l7-assets/layer7_managed_it_white_retina.png"
+OUTPUT_DIR="client/ui/assets"
 
 # Prüfe ob ImageMagick installiert ist
 if ! command -v convert &> /dev/null; then
@@ -41,7 +44,7 @@ fi
 
 echo -e "${BLUE}📦 Creating output directory...${NC}"
 mkdir -p "$OUTPUT_DIR"
-mkdir -p "$PROJECT_ROOT/branding/assets/generated"
+mkdir -p "branding/assets/generated"
 
 # Funktion: Icon mit Statusindikator erstellen
 create_status_icon() {
@@ -54,41 +57,41 @@ create_status_icon() {
     local output_file="$OUTPUT_DIR/${output_name}${theme_suffix}.png"
     
     # Basis-Icon erstellen
-    convert "$base_icon" -resize ${size}x${size} "$output_file"
+    $CONVERT_CMD "$base_icon" -resize ${size}x${size} "$output_file"
     
     # Status-Indikator hinzufügen (kleiner farbiger Punkt)
     case $status in
         "connected")
             # Grüner Punkt (layer7 grün)
-            convert "$output_file" \
+            $CONVERT_CMD "$output_file" \
                 -fill "#a0cf4f" \
                 -draw "circle $((size-15)),$((size-15)) $((size-15)),$((size-25))" \
                 "$output_file"
             ;;
         "disconnected")
             # Grauer/Schwarzer Punkt
-            convert "$output_file" \
+            $CONVERT_CMD "$output_file" \
                 -fill "#666666" \
                 -draw "circle $((size-15)),$((size-15)) $((size-15)),$((size-25))" \
                 "$output_file"
             ;;
         "connecting")
             # Orange Punkt (Warnung/In Progress)
-            convert "$output_file" \
+            $CONVERT_CMD "$output_file" \
                 -fill "#ff8c00" \
                 -draw "circle $((size-15)),$((size-15)) $((size-15)),$((size-25))" \
                 "$output_file"
             ;;
         "error")
             # Roter Punkt
-            convert "$output_file" \
+            $CONVERT_CMD "$output_file" \
                 -fill "#ff0000" \
                 -draw "circle $((size-15)),$((size-15)) $((size-15)),$((size-25))" \
                 "$output_file"
             ;;
         "update")
             # Blauer Punkt (Update verfügbar)
-            convert "$output_file" \
+            $CONVERT_CMD "$output_file" \
                 -fill "#0066cc" \
                 -draw "circle $((size-15)),$((size-15)) $((size-15)),$((size-25))" \
                 "$output_file"
@@ -100,16 +103,16 @@ create_status_icon() {
 
 # Basis-Icons kopieren (ohne Status-Indikator)
 echo -e "\n${BLUE}📋 Creating base icons...${NC}"
-convert "$BLACK_ICON" -resize 128x128 "$OUTPUT_DIR/netbird.png"
-convert "$BLACK_ICON" -resize 256x256 "$OUTPUT_DIR/l7-icon.png"
-convert "$BLACK_LOGO" -resize 512x512 "$PROJECT_ROOT/docs/media/logo.png"
-convert "$BLACK_LOGO" -resize 256x256 "$PROJECT_ROOT/docs/media/logo-full.png"
+$CONVERT_CMD "$BLACK_ICON" -resize 128x128 "$OUTPUT_DIR/netbird.png"
+$CONVERT_CMD "$BLACK_ICON" -resize 256x256 "$OUTPUT_DIR/l7-icon.png"
+$CONVERT_CMD "$BLACK_LOGO" -resize 512x512 "docs/media/logo.png"
+$CONVERT_CMD "$BLACK_LOGO" -resize 256x256 "docs/media/logo-full.png"
 echo -e "${GREEN}  ✓${NC} Base icons created"
 
 # Dot Icons für Menü
 echo -e "\n${BLUE}🔵 Creating menu dot icons...${NC}"
-convert "$BLACK_ICON" -resize 16x16 "$OUTPUT_DIR/connected.png"
-convert "$BLACK_ICON" -resize 16x16 -colorize 50,50,50 "$OUTPUT_DIR/disconnected.png"
+$CONVERT_CMD "$BLACK_ICON" -resize 16x16 "$OUTPUT_DIR/connected.png"
+$CONVERT_CMD "$BLACK_ICON" -resize 16x16 -colorize 50,50,50 "$OUTPUT_DIR/disconnected.png"
 echo -e "${GREEN}  ✓${NC} Menu dots created"
 
 # Light Mode Icons (Schwarz) generieren
@@ -143,7 +146,7 @@ create_status_icon "$WHITE_ICON" "update" "netbird-systemtray-update-disconnecte
 echo -e "\n${BLUE}🪟 Generating Windows .ico files...${NC}"
 if command -v icotool &> /dev/null; then
     for size in 16 32 48 64 128 256; do
-        convert "$BLACK_ICON" -resize ${size}x${size} "/tmp/l7-icon-${size}.png"
+        $CONVERT_CMD "$BLACK_ICON" -resize ${size}x${size} "/tmp/l7-icon-${size}.png"
     done
     icotool -c -o "$OUTPUT_DIR/netbird.ico" /tmp/l7-icon-*.png
     rm /tmp/l7-icon-*.png

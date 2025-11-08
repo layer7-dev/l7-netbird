@@ -20,9 +20,7 @@ echo -e "${BLUE}📍 Working directory: $PROJECT_ROOT${NC}"
 echo -e "\n${BLUE}🎨 Step 1: Generating l7 icons...${NC}"
 if [ -f "branding/scripts/generate-l7-icons.sh" ]; then
     chmod +x branding/scripts/generate-l7-icons.sh
-    cd branding/scripts
-    ./generate-l7-icons.sh
-    cd "$PROJECT_ROOT"
+    bash branding/scripts/generate-l7-icons.sh
 else
     echo -e "${YELLOW}⚠️  Icon generator script not found, skipping...${NC}"
 fi
