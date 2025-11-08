@@ -130,12 +130,19 @@ jobs:
           chmod +x branding/scripts/apply-l7-branding.sh
           ./branding/scripts/apply-l7-branding.sh
           
+      - name: Commit branding changes
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "Apply l7 branding for release"
+          
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: release --config .goreleaser_ui.yaml --clean --skip-validate
+          args: release --config .goreleaser_ui.yaml --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
