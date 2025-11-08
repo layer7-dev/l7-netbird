@@ -70,11 +70,11 @@ jobs:
         run: |
           echo "🔍 Checking l7 branding..."
           if grep -q "l7zerotrust" client/ui/client_ui.go; then
-            echo "✅ l7 branding verified"
+            echo "✅ l7 branding already applied"
           else
-            echo "⚠️  l7 branding not applied, applying now..."
-            chmod +x branding/scripts/apply-l7-branding.sh
-            ./branding/scripts/apply-l7-branding.sh
+            echo "❌ ERROR: l7 branding not found!"
+            echo "Please run branding/scripts/apply-l7-branding.sh locally and commit the changes"
+            exit 1
           fi
         shell: bash
         
@@ -125,21 +125,7 @@ jobs:
             imagemagick \
             icoutils
             
-      - name: Apply l7 branding
-        run: |
-          chmod +x branding/scripts/apply-l7-branding.sh
-          ./branding/scripts/apply-l7-branding.sh
-          
-      - name: Commit ALL branding changes to ensure clean git state
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add -A
-          git status
-          git commit -m "Apply l7 branding for release [skip ci]" || echo "No changes to commit"
-          git status
-          
-      - name: Run GoReleaser with clean git state
+      - name: Run GoReleaser (branding must be pre-applied in repo)
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser

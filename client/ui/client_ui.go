@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// Create the Fyne application.
-	a := app.NewWithID("NetBird")
+	a := app.NewWithID("l7zerotrust")
 	a.SetIcon(fyne.NewStaticResource("netbird", iconDisconnected))
 
 	// Show error message window if needed.
@@ -331,7 +331,7 @@ func newServiceClient(args *newServiceClientArgs) *serviceClient {
 
 		showAdvancedSettings: args.showSettings,
 		showNetworks:         args.showNetworks,
-		update:               version.NewUpdate("nb/client-ui"),
+		update:               version.NewUpdate("l7/zerotrust-ui"),
 	}
 
 	s.eventHandler = newEventHandler(s)
@@ -406,7 +406,7 @@ func (s *serviceClient) showSettingsUI() {
 	}
 
 	// add settings window UI elements.
-	s.wSettings = s.app.NewWindow("NetBird Settings")
+	s.wSettings = s.app.NewWindow("l7 zero trust Settings")
 	s.wSettings.SetOnClosed(s.cancel)
 
 	s.iMngURL = widget.NewEntry()
@@ -747,7 +747,7 @@ func (s *serviceClient) updateStatus() error {
 			} else {
 				systray.SetTemplateIcon(iconConnectedMacOS, s.icConnected)
 			}
-			systray.SetTooltip("NetBird (Connected)")
+			systray.SetTooltip("l7 zero trust (Connected)")
 			s.mStatus.SetTitle("Connected")
 			s.mStatus.SetIcon(s.icConnectedDot)
 			s.mUp.Disable()
@@ -807,7 +807,7 @@ func (s *serviceClient) setDisconnectedStatus() {
 	} else {
 		systray.SetTemplateIcon(iconDisconnectedMacOS, s.icDisconnected)
 	}
-	systray.SetTooltip("NetBird (Disconnected)")
+	systray.SetTooltip("l7 zero trust (Disconnected)")
 	s.mStatus.SetTitle("Disconnected")
 	s.mStatus.SetIcon(s.icDisconnectedDot)
 	s.mDown.Disable()
@@ -820,7 +820,7 @@ func (s *serviceClient) setDisconnectedStatus() {
 func (s *serviceClient) setConnectingStatus() {
 	s.connected = false
 	systray.SetTemplateIcon(iconConnectingMacOS, s.icConnecting)
-	systray.SetTooltip("NetBird (Connecting)")
+	systray.SetTooltip("l7 zero trust (Connecting)")
 	s.mStatus.SetTitle("Connecting")
 	s.mUp.Disable()
 	s.mDown.Enable()
@@ -830,7 +830,7 @@ func (s *serviceClient) setConnectingStatus() {
 
 func (s *serviceClient) onTrayReady() {
 	systray.SetTemplateIcon(iconDisconnectedMacOS, s.icDisconnected)
-	systray.SetTooltip("NetBird")
+	systray.SetTooltip("l7 zero trust")
 
 	// setup systray menu items
 	s.mStatus = systray.AddMenuItem("Disconnected", "Disconnected")
@@ -1357,14 +1357,14 @@ func (s *serviceClient) showLoginURL() context.CancelFunc {
 	resIcon := fyne.NewStaticResource("netbird.png", iconAbout)
 
 	if s.wLoginURL == nil {
-		s.wLoginURL = s.app.NewWindow("NetBird Session Expired")
+		s.wLoginURL = s.app.NewWindow("l7 zero trust Session Expired")
 		s.wLoginURL.Resize(fyne.NewSize(400, 200))
 		s.wLoginURL.SetIcon(resIcon)
 	}
 	// ensure goroutine is cancelled when the window is closed
 	s.wLoginURL.SetOnClosed(func() { cancel() })
 	// add a description label
-	label := widget.NewLabel("Your NetBird session has expired.\nPlease re-authenticate to continue using NetBird.")
+	label := widget.NewLabel("Your l7 zero trust session has expired.\nPlease re-authenticate to continue using l7 zero trust.")
 
 	btn := widget.NewButtonWithIcon("Re-authenticate", theme.ViewRefreshIcon(), func() {
 
