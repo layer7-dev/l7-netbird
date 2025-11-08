@@ -9,12 +9,12 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Quell-Assets
-BLACK_ICON="../l7-assets/layer7_managed_it_icon.png"
-WHITE_ICON="../l7-assets/layer7_managed_it_icon_white.png"
-BLACK_LOGO="../l7-assets/layer7_managed_it_black.png"
-WHITE_LOGO="../l7-assets/layer7_managed_it_white_retina.png"
-OUTPUT_DIR="../client/ui/assets"
+# Quell-Assets (relativ zum Script-Verzeichnis: branding/scripts/)
+BLACK_ICON="../../l7-assets/layer7_managed_it_icon.png"
+WHITE_ICON="../../l7-assets/layer7_managed_it_icon_white.png"
+BLACK_LOGO="../../l7-assets/layer7_managed_it_black.png"
+WHITE_LOGO="../../l7-assets/layer7_managed_it_white_retina.png"
+OUTPUT_DIR="../../client/ui/assets"
 
 # Prüfe ob ImageMagick installiert ist
 if ! command -v convert &> /dev/null; then
@@ -37,7 +37,7 @@ fi
 
 echo -e "${BLUE}📦 Creating output directory...${NC}"
 mkdir -p "$OUTPUT_DIR"
-mkdir -p "../branding/assets/generated"
+mkdir -p "../../branding/assets/generated"
 
 # Funktion: Icon mit Statusindikator erstellen
 create_status_icon() {
@@ -98,8 +98,8 @@ create_status_icon() {
 echo -e "\n${BLUE}📋 Creating base icons...${NC}"
 convert "$BLACK_ICON" -resize 128x128 "$OUTPUT_DIR/netbird.png"
 convert "$BLACK_ICON" -resize 256x256 "$OUTPUT_DIR/l7-icon.png"
-convert "$BLACK_LOGO" -resize 512x512 "../docs/media/logo.png"
-convert "$BLACK_LOGO" -resize 256x256 "../docs/media/logo-full.png"
+convert "$BLACK_LOGO" -resize 512x512 "../../docs/media/logo.png"
+convert "$BLACK_LOGO" -resize 256x256 "../../docs/media/logo-full.png"
 echo -e "${GREEN}  ✓${NC} Base icons created"
 
 # Dot Icons für Menü
